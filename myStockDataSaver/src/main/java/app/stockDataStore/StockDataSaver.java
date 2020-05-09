@@ -25,6 +25,8 @@ public class StockDataSaver {
 
 	public TradePriceDto storeStockDataFor(String symbol) {
 		StockQuote stockQuote= getQuote(symbol);
+		
+		logger.info("Saving data for the Symbol: " + symbol + " . ");
 		return tradePriceRepository.save(getTradePriceDto(stockQuote));
 	}
 

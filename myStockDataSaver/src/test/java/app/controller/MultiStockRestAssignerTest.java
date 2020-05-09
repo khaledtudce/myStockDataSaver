@@ -10,11 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.springframework.context.ApplicationContext;
-
-import app.SpringContext;
 import app.controller.MultiStockRestAssigner;
 import app.stockDataStore.SingleStockRunner;
 import app.stockDataStore.StockRetrieveScheduler;

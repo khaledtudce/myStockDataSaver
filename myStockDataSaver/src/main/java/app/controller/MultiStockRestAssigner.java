@@ -29,10 +29,10 @@ public class MultiStockRestAssigner {
 			stockRetrieveScheduler.setStockRetrieveScheduler(symbol, singleStockRunner);			
 			stockRetrieveScheduler.schuduleStockToStart(timeGapMilis);
 			stockDownloadList.put(symbol, stockRetrieveScheduler);
-			logger.info("Stock Symbol " + symbol + " is started to download.");
+			logger.info("multiStockAssigner: Stock Symbol " + symbol + " is requested to download.");
 		}
 		
-		return "Scheduler started";
+		return "Scheduler started for the symbol:" + symbol;
 	}
 
 	@RequestMapping("/multiStockAssigner/stopDownloadBySymbol")

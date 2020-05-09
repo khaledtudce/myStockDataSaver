@@ -27,13 +27,19 @@ public class SingleStockRunner{
 					try {
 						Thread.sleep(timeDistanceInMiliSecond);
 					} catch (InterruptedException e) {
-						logger.info("Could not run thread of: " + symbol + ". " +e.getMessage());
+						logger.info("Could not run thread of: " + symbol + " . " +e.getMessage());
 						e.printStackTrace();
 						isRunning = false;
 					}
 				}	
 			}
 		});
+		
+		t1.start();
+	}
+	
+	public void stopDownloadingAndSaving() {
+		isRunning = false;
 	}
 	
 	public void stopRunnerThread() {

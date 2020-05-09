@@ -31,26 +31,31 @@ public class StockRetrieveScheduler {
 	}
 
 	public void stopMainTimer() {
-		singleStockRunner.stopRunnerThread();
+		singleStockRunner.stopDownloadingAndSaving();
 		mainTimer.purge();
 		mainTimer.cancel();
 		isMainTimerRunning = false;
+		if(!singleStockRunner.isRunning)
+			singleStockRunner.stopRunnerThread(); // may be wait a bit?
 	}
 	
 	public void schuduleStockToStart(int timeGapMilis) {
 		
 		TimerTask timerTask = new TimerTask(){
-			public void run(){ 	//task
+			public void run(){ 	//task 9.30 to 4pm, DE 15.30 to 10 pm
 				isMainTimerRunning = true;
-				long msTimeToStop = 7 * 60 * 60 *1000; // stop after 7 hour ** need to check again
+				long msTimeToStop = 6 * 60 * 60 *1000 + 30 * 60 * 1000; // stop after 6.50 hour which is at 10.00 pm
 				Timer jobTimer = new Timer(); // timer to start the job
 				TimerTask jobTimerTask = jobTimerTask(jobTimer, msTimeToStop, timeGapMilis);
-				jobTimer.schedule(jobTimerTask, decideWhenToStart(), msTimeToStop); // start now or tomorrow at 9 and stop after 7 hour 
-				logger.info("Stock Scheduler: main timer started. For the symbol " + symbol 
-						+ " stock data downloading is/will be started at " + dateFormat.format(decideWhenToStart()));
+				Date startTime = decideWhenToStart();
+				jobTimer.schedule(jobTimerTask, startTime, decideWhenToStop(startTime, msTimeToStop)); // start now or tomorrow at 9 and stop after 7 hour 
+				logger.info("Scheduler: main timer started. For the symbol " + symbol 
+						+ " stock data downloading is/will be started at " + dateFormat.format(startTime)
+						+ ". It will be stopped today at " + dateFormat.format(msTimeToStop + startTime.getTime())); 
 			}
 		};
 		mainTimer.schedule(timerTask, new Date(), thisDayHourMintute(1, 8, 59).getTime()); // start immediately/repeat every next day 8.59 am
+		logger.info("Scheduler: main timer started at " + dateFormat.format(new Date()) + ". And it is scheduled to restart at " + dateFormat.format(thisDayHourMintute(1, 8, 59)));
 	}
 
 	private TimerTask jobTimerTask(Timer jobTimer, long msTimeToStop, int timeGapMilis) {
@@ -66,7 +71,7 @@ public class StockRetrieveScheduler {
 				}else {
 					singleStockRunner.startDownloadingAndSavingFor(symbol, timeGapMilis); // task
 					isTimerCloseable = true;
-					logger.info("Stock Scheduler: sub timer started. For the symbol " + symbol + " stock data downloading is started.");
+					logger.info("Scheduler: sub timer started. Stock data downloading for the symbol " + symbol + " is started.");
 				}
 			}
 		};
@@ -74,10 +79,25 @@ public class StockRetrieveScheduler {
 	}
 	
 	public Date decideWhenToStart() {
-		if(singleStockRunner.isMarketOpen(symbol))
-			return new Date();
+		Calendar now = new GregorianCalendar();
 		
-		return thisDayHourMintute(1, 9, 0);
+		if(singleStockRunner.isMarketOpen(symbol))
+			return now.getTime();
+		else if(now.get(Calendar.HOUR)<15 && now.get(Calendar.MINUTE)<30)
+			return thisDayHourMintute(0, 15, 30);
+		else
+			return thisDayHourMintute(1, 15, 30);
+	}
+	
+	private long decideWhenToStop(Date startTime, long msTimeToStop) {
+		Calendar calStartTime = new GregorianCalendar();
+		calStartTime.setTime(startTime);
+		
+		if(calStartTime.get(Calendar.HOUR)==9 && calStartTime.get(Calendar.MINUTE)==30) // return 6.30 hour if it was started at 9.30
+			return msTimeToStop;
+		else {
+			return thisDayHourMintute(0, 22, 0).getTime() - startTime.getTime(); // return the difference between 10 pm and now in millisecond if was started at any time of the day
+		}
 	}
 
 	public Date thisDayHourMintute(int day, int hour, int minute) {
