@@ -40,7 +40,7 @@ class SingleStockRunnerTest {
 		
 		singleStockRunner.startDownloadingAndSavingFor("AAPL", 500);
 		assertThat(singleStockRunner.isRunning).isEqualTo(true);
-		singleStockRunner.stopRunnerThread();
+		singleStockRunner.stopDownloading();
 		assertThat(singleStockRunner.isRunning).isEqualTo(false);
 	}
 	

@@ -45,7 +45,7 @@ public class IEXDataClient {
             
             if (entity != null) {
                 result = EntityUtils.toString(entity);
-                logger.info("Received Stock information for " + quote + ": " + result);
+//                logger.info("Received Stock information for " + quote + ": " + result);
             }
         }
         

@@ -1,5 +1,9 @@
 package app.stockDataStore;
 
+import java.util.Date;
+import java.util.Timer;
+import java.util.TimerTask;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,37 +19,41 @@ public class SingleStockRunner{
 	@Autowired
 	StockDataSaver stockDataSaver;
 	
-    public Boolean isRunning = true;
+    public Boolean isRunning = false;
+    Timer stockDownloadTimer = new Timer();
     Thread t1;
 	
-	public void startDownloadingAndSavingFor(String symbol, int timeDistanceInMiliSecond) {
-		t1 = new Thread(new Runnable() {
+	public void startDownloadingAndSavingFor(String symbol, int repeatInMiliSecond) {
+		t1 = new Thread(new Runnable() { // this timer running always in same thread, the right thread does not stop
 			@Override
 			public void run() {
-				while(isRunning) {
-					stockDataSaver.storeStockDataFor(symbol);
-					try {
-						Thread.sleep(timeDistanceInMiliSecond);
-					} catch (InterruptedException e) {
-						logger.info("Could not run thread of: " + symbol + " . " +e.getMessage());
-						e.printStackTrace();
-						isRunning = false;
+				TimerTask timerTask = new TimerTask(){
+					public void run(){ 
+						isRunning = true;
+						stockDataSaver.storeStockDataFor(symbol);
 					}
-				}	
+				};
+				stockDownloadTimer.schedule(timerTask, new Date(), repeatInMiliSecond);
+				logger.info("Thread: " + t1.getId() + " started");
+				logger.info("SingleStockRunner: Scheduler started for the " + symbol + " . It will repeat at every " + repeatInMiliSecond + " millisecond");
 			}
 		});
 		
 		t1.start();
+		
 	}
 	
-	public void stopDownloadingAndSaving() {
+	public void stopDownloading() {
 		isRunning = false;
+		stockDownloadTimer.purge();
+		stockDownloadTimer.cancel();
 	}
 	
 	public void stopRunnerThread() {
-		isRunning = false;
-		if(t1.isAlive())
+		if(t1.isAlive()) {
 			t1.interrupt();
+			logger.info("Thread: " + t1.getId() + " stopped");
+		}
 	}
 	
 	public Boolean isMarketOpen(String symbol) {

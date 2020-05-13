@@ -2,6 +2,7 @@ plugins {
 	id 'org.springframework.boot' version '2.2.6.RELEASE'
 	id 'io.spring.dependency-management' version '1.0.9.RELEASE'
 	id 'java'
+	id 'docker'
 }
 
 group = 'app'
@@ -13,7 +14,6 @@ repositories {
 }
 
 dependencies {
-	implementation 'org.powermock:powermock-mockito-release-full:1.5.4:pom'
 	implementation 'com.google.code.gson:gson:2.8.6'
 	implementation 'org.apache.httpcomponents:httpclient:4.5.10'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -26,6 +26,17 @@ dependencies {
 
 test {
 	useJUnitPlatform()
+}
+
+task buildDocker (type:Docker, dependsOn:build){
+	applicationName = jar.baseName
+	dockerfile= file('src/main/docker/Dockerfile')
+	doFirst{
+		copy{
+			from jar
+			into stageDir
+		}	
+	}
 }
 
 task mycustom_task{

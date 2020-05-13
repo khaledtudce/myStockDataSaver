@@ -31,12 +31,14 @@ public class StockRetrieveScheduler {
 	}
 
 	public void stopMainTimer() {
-		singleStockRunner.stopDownloadingAndSaving();
+		if(singleStockRunner.isRunning) {
+			singleStockRunner.stopDownloading();
+			singleStockRunner.stopRunnerThread(); 
+		}
 		mainTimer.purge();
 		mainTimer.cancel();
 		isMainTimerRunning = false;
-		if(!singleStockRunner.isRunning)
-			singleStockRunner.stopRunnerThread(); // may be wait a bit?
+		logger.info("Timer stopped for the Symbol: " + symbol);
 	}
 	
 	public void schuduleStockToStart(int timeGapMilis) {
@@ -49,7 +51,7 @@ public class StockRetrieveScheduler {
 				TimerTask jobTimerTask = jobTimerTask(jobTimer, msTimeToStop, timeGapMilis);
 				Date startTime = decideWhenToStart();
 				jobTimer.schedule(jobTimerTask, startTime, decideWhenToStop(startTime, msTimeToStop)); // start now or tomorrow at 9 and stop after 7 hour 
-				logger.info("Scheduler: main timer started. For the symbol " + symbol 
+				logger.info("Scheduler: sub timer scheduled. For the symbol " + symbol 
 						+ " stock data downloading is/will be started at " + dateFormat.format(startTime)
 						+ ". It will be stopped today at " + dateFormat.format(msTimeToStop + startTime.getTime())); 
 			}
@@ -63,15 +65,20 @@ public class StockRetrieveScheduler {
 			Boolean isTimerCloseable = false;
 			public void run(){
 				if (isTimerCloseable == true) {
-					singleStockRunner.stopRunnerThread();
+					if(singleStockRunner.isRunning) {
+						singleStockRunner.stopDownloading();
+					}
 					cancel();
 					jobTimer.purge();
 					jobTimer.cancel();
-					logger.info("Stock Scheduler: sub timer is closed for the Symbol: " + symbol);
+					logger.info("Scheduler: sub timer is closed for the Symbol: " + symbol);
 				}else {
+					
+					
+					
 					singleStockRunner.startDownloadingAndSavingFor(symbol, timeGapMilis); // task
 					isTimerCloseable = true;
-					logger.info("Scheduler: sub timer started. Stock data downloading for the symbol " + symbol + " is started.");
+					logger.info("Scheduler: sub timer started. Stock data downloading for the symbol: " + symbol);
 				}
 			}
 		};
@@ -83,7 +90,7 @@ public class StockRetrieveScheduler {
 		
 		if(singleStockRunner.isMarketOpen(symbol))
 			return now.getTime();
-		else if(now.get(Calendar.HOUR)<15 && now.get(Calendar.MINUTE)<30)
+		else if(now.get(Calendar.HOUR_OF_DAY)<15 && now.get(Calendar.MINUTE)<30)
 			return thisDayHourMintute(0, 15, 30);
 		else
 			return thisDayHourMintute(1, 15, 30);
@@ -93,7 +100,7 @@ public class StockRetrieveScheduler {
 		Calendar calStartTime = new GregorianCalendar();
 		calStartTime.setTime(startTime);
 		
-		if(calStartTime.get(Calendar.HOUR)==9 && calStartTime.get(Calendar.MINUTE)==30) // return 6.30 hour if it was started at 9.30
+		if(calStartTime.get(Calendar.HOUR_OF_DAY)==15 && calStartTime.get(Calendar.MINUTE)==30) // return 6.30 hour if it was started at 9.30
 			return msTimeToStop;
 		else {
 			return thisDayHourMintute(0, 22, 0).getTime() - startTime.getTime(); // return the difference between 10 pm and now in millisecond if was started at any time of the day

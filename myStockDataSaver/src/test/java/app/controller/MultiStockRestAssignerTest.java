@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doNothing;
 import java.util.ArrayList;
 
-import org.junit.Ignore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
@@ -15,7 +14,6 @@ import app.controller.MultiStockRestAssigner;
 import app.stockDataStore.SingleStockRunner;
 import app.stockDataStore.StockRetrieveScheduler;
 
-@Ignore
 class MultiStockRestAssignerTest {
 	
 	@InjectMocks
@@ -32,6 +30,7 @@ class MultiStockRestAssignerTest {
 		MockitoAnnotations.initMocks(this);
 	}
 	
+
 	@Test
 	void should_start_downloading_by_given_stock_symbol_and_distance_by_rest() {
 		

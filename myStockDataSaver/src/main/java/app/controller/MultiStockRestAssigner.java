@@ -68,7 +68,6 @@ public class MultiStockRestAssigner {
 	public List<String> stopAll() {
 
 		stockDownloadList.forEach((symbol, value) -> { 
-			stockDownloadList.get(symbol).singleStockRunner.stopRunnerThread();
 			stockDownloadList.get(symbol).stopMainTimer();
 			logger.info("Stock Symbol " + symbol + " is stopped downloading.");
         });
