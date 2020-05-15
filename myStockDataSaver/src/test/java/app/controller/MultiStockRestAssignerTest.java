@@ -45,7 +45,7 @@ class MultiStockRestAssignerTest {
 	@Test
 	void should_not_add_stock_symbol_downloading_list_when_already_exists() {
 		
-		doNothing().when(ArgumentMatchers.any(StockRetrieveScheduler.class)).schuduleStockToStart(500);
+		doNothing().when(ArgumentMatchers.any(StockRetrieveScheduler.class)).schuduleStockToStart("AAPL", 500);
 		multiStockAssigner.startDownload("AAPL", 500);
 		multiStockAssigner.startDownload("AAPL", 500);
 		assertThat(multiStockAssigner.getCurrentDownloadingList())
@@ -64,7 +64,7 @@ class MultiStockRestAssignerTest {
 	@Test
 	void should_tell_if_stop_downloading_by_given_wrong_stock_symbol_called() {
 		
-		doNothing().when(ArgumentMatchers.any(StockRetrieveScheduler.class)).schuduleStockToStart(500);
+		doNothing().when(ArgumentMatchers.any(StockRetrieveScheduler.class)).schuduleStockToStart("AAPL", 500);
 		
 		assertThat(multiStockAssigner.stopDownload("AAPL")).isEqualTo("AAPL was not exist in the stock downloading list");
 	}	

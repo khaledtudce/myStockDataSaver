@@ -2,7 +2,6 @@ plugins {
 	id 'org.springframework.boot' version '2.2.6.RELEASE'
 	id 'io.spring.dependency-management' version '1.0.9.RELEASE'
 	id 'java'
-	id 'docker'
 }
 
 group = 'app'
@@ -28,15 +27,17 @@ test {
 	useJUnitPlatform()
 }
 
-task buildDocker (type:Docker, dependsOn:build){
-	applicationName = jar.baseName
-	dockerfile= file('src/main/docker/Dockerfile')
-	doFirst{
-		copy{
-			from jar
-			into stageDir
-		}	
-	}
+jar {
+    enabled = true
+    manifest{
+    	attributes("Main-Class": "app.Application")
+    }
+    destinationDirectory = file("$rootDir/myJar")
+    archivesBaseName = 'stockDataSaver'
+}
+
+bootJar {
+   enabled = false
 }
 
 task mycustom_task{

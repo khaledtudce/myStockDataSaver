@@ -26,10 +26,6 @@ class StockRetrieveSchedulerTest {
 
 	Calendar now = Calendar.getInstance();
 	
-	public StockRetrieveSchedulerTest() {
-		stockRetrieveScheduler.setStockRetrieveScheduler("AAPL", singleStockRunner);
-	}
-	
 	@BeforeEach
 	void setUp() throws Exception {
 		now.setTime(new Date());
@@ -67,10 +63,10 @@ class StockRetrieveSchedulerTest {
 	@Test
 	void when_app_running_should_start_and_stop_timer_for_a_stock() {		
 				
-		stockRetrieveScheduler.schuduleStockToStart(500);
+		stockRetrieveScheduler.schuduleStockToStart("AAPL", 500);
 		assertThat(true).isEqualTo(stockRetrieveScheduler.isMainTimerRunning); 
 		
-		stockRetrieveScheduler.stopMainTimer();
+		stockRetrieveScheduler.stopMainTimer("AAPL");
 		assertThat(false).isEqualTo(stockRetrieveScheduler.isMainTimerRunning); 		
 	}
 	
@@ -79,7 +75,7 @@ class StockRetrieveSchedulerTest {
 		when(singleStockRunner.isMarketOpen(Mockito.any())).thenReturn(true);
 				
 		Calendar receivedDate = Calendar.getInstance();
-		receivedDate.setTime(stockRetrieveScheduler.decideWhenToStart());
+		receivedDate.setTime(stockRetrieveScheduler.decideWhenToStart("AAPL"));
 		
 		assertThat(now.get(Calendar.YEAR)).isEqualTo(receivedDate.get(Calendar.YEAR)); 
 		assertThat(now.get(Calendar.MONTH)).isEqualTo(receivedDate.get(Calendar.MONTH)); 
@@ -92,7 +88,7 @@ class StockRetrieveSchedulerTest {
 		when(singleStockRunner.isMarketOpen(Mockito.any())).thenReturn(false);
 				
 		Calendar receivedDate = Calendar.getInstance();
-		receivedDate.setTime(stockRetrieveScheduler.decideWhenToStart());
+		receivedDate.setTime(stockRetrieveScheduler.decideWhenToStart("AAPL"));
 		
 		now.add(Calendar.DAY_OF_MONTH, 1);
 		

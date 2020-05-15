@@ -3,31 +3,31 @@ package app.controller;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Set;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import app.SpringContext;
-import app.IEXStockDataRetrieve.IEXDataClient;
-import app.stockDataStore.SingleStockRunner;
 import app.stockDataStore.StockRetrieveScheduler;
 
 @RestController
 public class MultiStockRestAssigner {
 	
-	private static Logger logger = LogManager.getLogger(IEXDataClient.class);
+	@Autowired
+	StockRetrieveScheduler stockRetrieveScheduler;
+	
+	private static Logger logger = LogManager.getLogger(MultiStockRestAssigner.class);
 	
 	Hashtable<String, StockRetrieveScheduler> stockDownloadList = new Hashtable<String, StockRetrieveScheduler>();
 	
 	@RequestMapping("/multiStockAssigner/downloadBySymbolAndTimeGap")
 	public String startDownload(@RequestParam("symbol") String symbol, @RequestParam("timeGapMilis") int timeGapMilis) {
 		if(!stockDownloadList.containsKey(symbol)) {
-			SingleStockRunner singleStockRunner = SpringContext.getBean(SingleStockRunner.class);
-			StockRetrieveScheduler stockRetrieveScheduler = SpringContext.getBean(StockRetrieveScheduler.class);
-			stockRetrieveScheduler.setStockRetrieveScheduler(symbol, singleStockRunner);			
-			stockRetrieveScheduler.schuduleStockToStart(timeGapMilis);
+			stockRetrieveScheduler.schuduleStockToStart(symbol, timeGapMilis);
 			stockDownloadList.put(symbol, stockRetrieveScheduler);
 			logger.info("multiStockAssigner: Stock Symbol " + symbol + " is requested to download.");
 		}
@@ -38,7 +38,7 @@ public class MultiStockRestAssigner {
 	@RequestMapping("/multiStockAssigner/stopDownloadBySymbol")
 	public String stopDownload(@RequestParam("symbol") String symbol) {
 		if(stockDownloadList.containsKey(symbol)) {
-			stockDownloadList.get(symbol).stopMainTimer();
+			stockDownloadList.get(symbol).stopMainTimer(symbol);
 			stockDownloadList.remove(symbol);
 			return "Scheduler stopped for the symbol: " + symbol;
 		}	
@@ -53,11 +53,8 @@ public class MultiStockRestAssigner {
 
 	@RequestMapping("/multiStockAssigner/startAll")
 	public List<String> startAll(@RequestParam("timeGapMilis") int timeGapMilis) {
-		stockDownloadList.forEach((symbol, value) -> {
-			SingleStockRunner singleStockRunner = SpringContext.getBean(SingleStockRunner.class);
-			StockRetrieveScheduler stockRetrieveScheduler = SpringContext.getBean(StockRetrieveScheduler.class);
-			stockRetrieveScheduler.setStockRetrieveScheduler(symbol, singleStockRunner);			
-			stockRetrieveScheduler.schuduleStockToStart(timeGapMilis);
+		stockDownloadList.forEach((symbol, value) -> {		
+			stockRetrieveScheduler.schuduleStockToStart(symbol, timeGapMilis);
 			logger.info("Stock Symbol: " + symbol + " is started to download from history.");
 		});
 
@@ -66,11 +63,12 @@ public class MultiStockRestAssigner {
 	
 	@RequestMapping("/multiStockAssigner/stopAll")
 	public List<String> stopAll() {
-
-		stockDownloadList.forEach((symbol, value) -> { 
-			stockDownloadList.get(symbol).stopMainTimer();
+		Set<String> keys = stockDownloadList.keySet();
+		
+		for (String symbol: keys) {
+			stockDownloadList.get(symbol).stopMainTimer(symbol);
 			logger.info("Stock Symbol " + symbol + " is stopped downloading.");
-        });
+		}
 		
 		return new ArrayList<String>(stockDownloadList.keySet());
 	}

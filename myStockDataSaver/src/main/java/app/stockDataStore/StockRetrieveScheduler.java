@@ -6,76 +6,63 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Timer;
 import java.util.TimerTask;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import app.IEXStockDataRetrieve.IEXDataClient;
 
 @Component
 public class StockRetrieveScheduler {
 	
-	private static Logger logger = LogManager.getLogger(IEXDataClient.class);
+	private static Logger logger = LogManager.getLogger(StockRetrieveScheduler.class);
 	
-	String symbol = "NotSetYet";
-	public SingleStockRunner singleStockRunner;
+	@Autowired
+	SingleStockRunner singleStockRunner;
+	
 	Timer mainTimer;
 	public Boolean isMainTimerRunning = false;
 	SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
-	
-	public void setStockRetrieveScheduler(String symbol, SingleStockRunner singleStockRunner) {
-		this.symbol = symbol;
-		this.singleStockRunner = singleStockRunner;
-		mainTimer = new Timer(); // timer to run other scheduler, repeat everyday at 9 am
-	}
 
-	public void stopMainTimer() {
-		if(singleStockRunner.isRunning) {
-			singleStockRunner.stopDownloading();
-			singleStockRunner.stopRunnerThread(); 
-		}
+	public void stopMainTimer(String symbol) {
+		singleStockRunner.stopRunnerTimer(symbol);
 		mainTimer.purge();
 		mainTimer.cancel();
 		isMainTimerRunning = false;
 		logger.info("Timer stopped for the Symbol: " + symbol);
 	}
 	
-	public void schuduleStockToStart(int timeGapMilis) {
+	public void schuduleStockToStart(String symbol, int timeGapMilis) {
+		mainTimer = new Timer(); // timer to run other scheduler, repeat everyday at 15.30 am
 		
 		TimerTask timerTask = new TimerTask(){
 			public void run(){ 	//task 9.30 to 4pm, DE 15.30 to 10 pm
 				isMainTimerRunning = true;
 				long msTimeToStop = 6 * 60 * 60 *1000 + 30 * 60 * 1000; // stop after 6.50 hour which is at 10.00 pm
 				Timer jobTimer = new Timer(); // timer to start the job
-				TimerTask jobTimerTask = jobTimerTask(jobTimer, msTimeToStop, timeGapMilis);
-				Date startTime = decideWhenToStart();
-				jobTimer.schedule(jobTimerTask, startTime, decideWhenToStop(startTime, msTimeToStop)); // start now or tomorrow at 9 and stop after 7 hour 
+				TimerTask jobTimerTask = jobTimerTask(jobTimer, symbol, msTimeToStop, timeGapMilis);
+				Date startTime = decideWhenToStart(symbol);
+				long whenToStop = decideWhenToStop(startTime, msTimeToStop);
+				jobTimer.schedule(jobTimerTask, startTime, whenToStop); // start now or tomorrow at 15.30 and stop after 6.50 hour 
 				logger.info("Scheduler: sub timer scheduled. For the symbol " + symbol 
 						+ " stock data downloading is/will be started at " + dateFormat.format(startTime)
-						+ ". It will be stopped today at " + dateFormat.format(msTimeToStop + startTime.getTime())); 
+						+ ". It will be stopped at " + dateFormat.format(whenToStop + startTime.getTime())); 
 			}
 		};
-		mainTimer.schedule(timerTask, new Date(), thisDayHourMintute(1, 8, 59).getTime()); // start immediately/repeat every next day 8.59 am
+		mainTimer.schedule(timerTask, new Date(), thisDayHourMintute(1, 14, 29).getTime()); // start immediately/repeat every next day 14.29 am
 		logger.info("Scheduler: main timer started at " + dateFormat.format(new Date()) + ". And it is scheduled to restart at " + dateFormat.format(thisDayHourMintute(1, 8, 59)));
 	}
 
-	private TimerTask jobTimerTask(Timer jobTimer, long msTimeToStop, int timeGapMilis) {
+	private TimerTask jobTimerTask(Timer jobTimer, String symbol, long msTimeToStop, int timeGapMilis) {
 		TimerTask tt = new TimerTask(){
 			Boolean isTimerCloseable = false;
 			public void run(){
 				if (isTimerCloseable == true) {
-					if(singleStockRunner.isRunning) {
-						singleStockRunner.stopDownloading();
-					}
+					singleStockRunner.stopRunnerTimer(symbol);
 					cancel();
 					jobTimer.purge();
 					jobTimer.cancel();
 					logger.info("Scheduler: sub timer is closed for the Symbol: " + symbol);
 				}else {
-					
-					
-					
 					singleStockRunner.startDownloadingAndSavingFor(symbol, timeGapMilis); // task
 					isTimerCloseable = true;
 					logger.info("Scheduler: sub timer started. Stock data downloading for the symbol: " + symbol);
@@ -85,7 +72,7 @@ public class StockRetrieveScheduler {
 		return tt;
 	}
 	
-	public Date decideWhenToStart() {
+	public Date decideWhenToStart(String symbol) {
 		Calendar now = new GregorianCalendar();
 		
 		if(singleStockRunner.isMarketOpen(symbol))
